@@ -1,28 +1,22 @@
 <?php
 
-// Allow cross-origin requests from same server
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 
-// Preflight
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(200); exit; }
-
-// ── DB connection (Dynamic for Railway) ──
-$host = getenv('MYSQLHOST') ?: 'localhost';
-$user = getenv('MYSQLUSER') ?: 'root';
-$pass = getenv('MYSQLPASSWORD') ?: '';
-$db   = getenv('MYSQLDATABASE') ?: 'crud_store';
-$port = getenv('MYSQLPORT') ?: '3306';
-
-$conn = new mysqli($host, $user, $pass, $db, $port);
-if ($conn->connect_error) {
-    http_response_code(500);
-    echo json_encode(['error' => 'DB connection failed: ' . $conn->connect_error]);
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
     exit;
 }
-$conn->set_charset('utf8mb4');
+
+require_once __DIR__ . '/../config.php';
+
+$conn = db();
+
+function is_admin(): bool {
+    return !empty($_SESSION['admin_id']);
+}
 
 // ── Session check helper ──
 function is_admin(): bool {
