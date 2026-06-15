@@ -55,10 +55,24 @@ window.wishRemove = function (id) {
     }
 };
 
-/* ── Move wishlist item to cart ── */
+/* ── Move wishlist item to cart with Stock Validation ── */
 window.wishMoveToCart = function (id) {
     const item = wishGet().find(x => x.id === id);
     if (!item) return;
+
+    // Cross-verify with live database counts exposed by products.html
+    if (window.PRODUCTS) {
+        const liveProduct = window.PRODUCTS.find(x => x.id === id);
+        if (liveProduct) {
+            if (liveProduct.stock <= 0) {
+                alert(`Sorry, ${item.name} is out of stock and cannot be added to your cart!`);
+                return;
+            }
+            // Pass the accurate stock ceiling balance directly down to cart counters
+            item.stock = liveProduct.stock;
+        }
+    }
+
     window.addToCart(item);
     window.wishRemove(id);
 
@@ -103,25 +117,39 @@ window.wishRender = function wishRender() {
         return;
     }
 
-    container.innerHTML = list.map(item => `
-        <div class="wish-item">
+    container.innerHTML = list.map(item => {
+        // ── Determine live out-of-stock context states ──
+        let isOutOfStock = false;
+        if (window.PRODUCTS) {
+            const liveProduct = window.PRODUCTS.find(x => x.id === item.id);
+            if (liveProduct && liveProduct.stock <= 0) {
+                isOutOfStock = true;
+            }
+        }
+
+        return `
+        <div class="wish-item" style="${isOutOfStock ? 'opacity: 0.75;' : ''}">
             <div class="wish-item-img">
                 <img src="${item.img}" alt="${item.name}" onerror="this.style.display='none'">
             </div>
             <div class="wish-item-info">
                 <div class="wish-item-name">${item.name}</div>
                 <div class="wish-item-price">₱${Number(item.price).toLocaleString()}</div>
+                ${isOutOfStock ? `<div style="color: #e74c3c; font-size: 11px; font-weight: 600; margin-top: 2px;">Out of Stock</div>` : ''}
             </div>
             <div class="wish-item-actions">
-                <button class="wish-action-btn add-cart" onclick="wishMoveToCart(${item.id})" title="Move to cart">
-                    <i class='bx bx-cart-add'></i>
+                <button class="wish-action-btn add-cart" 
+                        onclick="${isOutOfStock ? `alert('Sorry, this product is out of stock!')` : `wishMoveToCart(${item.id})`}" 
+                        title="${isOutOfStock ? 'Out of stock' : 'Move to cart'}"
+                        ${isOutOfStock ? 'style="background: #b2bec3; cursor: not-allowed;"' : ''}>
+                    <i class='bx ${isOutOfStock ? "bx-block" : "bx-cart-add"}'></i>
                 </button>
                 <button class="wish-action-btn remove-wish" onclick="wishRemove(${item.id})" title="Remove">
                     <i class='bx bx-trash'></i>
                 </button>
             </div>
-        </div>
-    `).join('');
+        </div>`;
+    }).join('');
 }
 
 /* ══ INIT ══ */
