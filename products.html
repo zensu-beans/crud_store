@@ -164,6 +164,9 @@
                 wished: wishedIds.has(String(p.id)) 
             }));
 
+            // ── ADD THIS LINE BELOW TO EXPOSE IT TO WISHLIST.JS ──
+            window.PRODUCTS = PRODUCTS;
+
             render();
         } catch (err) {
             console.error("Error loading products:", err);
